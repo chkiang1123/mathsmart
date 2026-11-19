@@ -1,0 +1,99 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  :root {
+    --font-sans: "Plus Jakarta Sans", "Avenir Next", "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-math: "STIX Two Text", "Cambria Math", "Times New Roman", Georgia, serif;
+    --font-mono: "IBM Plex Mono", "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+    /* SVG Plot & Diagram Theme Tokens (Light) */
+    --plot-bg: rgba(248, 250, 252, 0.7);
+    --plot-grid: #e2e8f0;
+    --plot-axis: #475569;
+    --plot-axis-muted: #94a3b8;
+    --plot-tick: #64748b;
+    --plot-label: #334155;
+    --plot-point-label: #1e293b;
+    --plot-vertex-label: #b91c1c;
+    --plot-root-label: #047857;
+    --plot-sym-label: #4f46e5;
+    --plot-dot-bg: #ffffff;
+    --tile-x2-fill: #e0f2fe;
+    --tile-x2-text: #0369a1;
+    --tile-wing-fill: #fef3c7;
+    --tile-wing-text: #92400e;
+    --tile-corner-fill: #dcfce7;
+    --tile-corner-text: #065f46;
+  }
+
+  html.dark {
+    --plot-bg: #0f172a;
+    --plot-grid: #1e293b;
+    --plot-axis: #94a3b8;
+    --plot-axis-muted: #475569;
+    --plot-tick: #94a3b8;
+    --plot-label: #e2e8f0;
+    --plot-point-label: #f1f5f9;
+    --plot-vertex-label: #fca5a5;
+    --plot-root-label: #6ee7b7;
+    --plot-sym-label: #a5b4fc;
+    --plot-dot-bg: #0f172a;
+    --tile-x2-fill: rgba(14, 165, 233, 0.18);
+    --tile-x2-text: #7dd3fc;
+    --tile-wing-fill: rgba(245, 158, 11, 0.18);
+    --tile-wing-text: #fcd34d;
+    --tile-corner-fill: rgba(16, 185, 129, 0.18);
+    --tile-corner-text: #6ee7b7;
+  }
+
+  html {
+    font-family: var(--font-sans);
+  }
+}
+
+.font-math {
+  font-family: var(--font-math);
+}
+
+.font-mono-tabular {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* KaTeX alignment polish */
+.katex {
+  font-size: 1.03em;
+}
+
+.katex-display {
+  margin: 0.25rem 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+/* Crisp custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+html.dark ::-webkit-scrollbar-thumb {
+  background: #334155;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
