@@ -12,6 +12,7 @@ import {
   LineChart,
   Pause,
   Play,
+  Repeat,
   RotateCcw,
   Sparkles,
   XCircle,
@@ -33,6 +34,8 @@ interface StepAnalyzerProps {
   showHintGraph: boolean;
   onToggleHintGraph: () => void;
   onStepProgressChange?: (progress: StepProgressState) => void;
+  onStartDrill?: () => void;
+  isDrillMode?: boolean;
 }
 
 const OPTION_LETTERS = ['A', 'B', 'C', 'D'] as const;
@@ -46,6 +49,8 @@ export const StepAnalyzer: React.FC<StepAnalyzerProps> = ({
   showHintGraph,
   onToggleHintGraph,
   onStepProgressChange,
+  onStartDrill,
+  isDrillMode = false,
 }) => {
   const [activePartIdx, setActivePartIdx] = useState(0);
   const [activeStep, setActiveStep] = useState(0); // 0 = hidden; 1..totalSteps = only this step shown
@@ -147,24 +152,38 @@ export const StepAnalyzer: React.FC<StepAnalyzerProps> = ({
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 dark:border-slate-800 px-4 py-3">
         <div>
           <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-            Hints &amp; Step-by-Step Solutions
+            {isDrillMode ? 'Drill Hints & Step-by-Step Solution' : 'Hints & Step-by-Step Solutions'}
           </h3>
           <p className="text-xs text-slate-500 dark:text-slate-400">
             Focused single-step view — advancing replaces the previous step without scrolling
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => onToggleComplete(question.id)}
-          className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition-colors cursor-pointer ${
-            isCompleted
-              ? 'border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 dark:border-emerald-700/70 dark:bg-emerald-950/50 dark:text-emerald-200 dark:hover:bg-emerald-900/60'
-              : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700'
-          }`}
-        >
-          <Check className="h-3.5 w-3.5" />
-          {isCompleted ? 'Completed' : 'Mark Completed'}
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          {!isDrillMode && onStartDrill && (
+            <button
+              type="button"
+              onClick={onStartDrill}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-300 bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-800 hover:bg-indigo-100 dark:border-indigo-500/60 dark:bg-indigo-950/60 dark:text-indigo-200 dark:hover:bg-indigo-900/60 transition-colors cursor-pointer"
+            >
+              <Repeat className="h-3.5 w-3.5" />
+              Drill Similar
+            </button>
+          )}
+          {!isDrillMode && (
+            <button
+              type="button"
+              onClick={() => onToggleComplete(question.id)}
+              className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition-colors cursor-pointer ${
+                isCompleted
+                  ? 'border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 dark:border-emerald-700/70 dark:bg-emerald-950/50 dark:text-emerald-200 dark:hover:bg-emerald-900/60'
+                  : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700'
+              }`}
+            >
+              <Check className="h-3.5 w-3.5" />
+              {isCompleted ? 'Completed' : 'Mark Completed'}
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="p-4 space-y-4">
@@ -546,11 +565,25 @@ export const StepAnalyzer: React.FC<StepAnalyzerProps> = ({
               transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
               className="rounded-lg border border-emerald-200 bg-emerald-50 dark:border-emerald-800/60 dark:bg-emerald-950/40 px-3.5 py-3 space-y-1"
             >
-              <div className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300">
-                Final Solution Answer
-              </div>
-              <div className="text-sm font-semibold text-emerald-950 dark:text-emerald-100">
-                <MathText text={currentPart.answer} />
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <div className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300">
+                    Final Solution Answer
+                  </div>
+                  <div className="text-sm font-semibold text-emerald-950 dark:text-emerald-100">
+                    <MathText text={currentPart.answer} />
+                  </div>
+                </div>
+                {!isDrillMode && onStartDrill && (
+                  <button
+                    type="button"
+                    onClick={onStartDrill}
+                    className="inline-flex items-center gap-1.5 rounded-md border border-emerald-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-emerald-800 hover:bg-emerald-100 dark:border-emerald-700 dark:bg-slate-900 dark:text-emerald-200 dark:hover:bg-emerald-900/40 cursor-pointer shrink-0 transition-colors"
+                  >
+                    <Repeat className="h-3.5 w-3.5" />
+                    Practice Similar Drill
+                  </button>
+                )}
               </div>
             </motion.div>
           )}

@@ -28,7 +28,7 @@ export default defineConfig(({ command }) => {
         },
       },
       {
-        name: 'copy-unbundled-src-assets',
+        name: 'sync-github-pages-docs',
         apply: 'build',
         closeBundle(error?: Error): void {
           if (error) {
@@ -39,6 +39,14 @@ export default defineConfig(({ command }) => {
           const distAssets = path.resolve(distDir, 'src/assets');
           if (fs.existsSync(distDir) && fs.existsSync(srcAssets)) {
             fs.cpSync(srcAssets, distAssets, { recursive: true, force: true });
+          }
+
+          const distHtml = path.resolve(distDir, 'index.html');
+          const docsDir = path.resolve(__dirname, 'docs');
+          if (fs.existsSync(distHtml)) {
+            fs.mkdirSync(docsDir, { recursive: true });
+            fs.copyFileSync(distHtml, path.resolve(docsDir, 'index.html'));
+            fs.writeFileSync(path.resolve(docsDir, '.nojekyll'), '');
           }
         },
       },
