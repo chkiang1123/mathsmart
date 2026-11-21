@@ -1,11 +1,26 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { EXERCISE_GROUPS, getAllQuestions } from './index';
+import {
+  ALL_EXERCISE_GROUPS,
+  CH3_EXERCISES,
+  EXERCISE_GROUPS,
+  getAllChapterQuestions,
+  getAllQuestions,
+} from './index';
 import { evaluateGeometryScenario } from '../utils/geometryModels';
 import { evaluateCurveY, analyzeQuadratic } from '../utils/mathEngine';
 
-test('exercise groups match expected structure and question counts', () => {
-  const expected: Record<string, number> = {
+test('Chapter 3 and Chapter 4 exercise groups match expected structure and question counts', () => {
+  const expectedCh3: Record<string, number> = {
+    ex3_1: 37,
+    ex3_2: 34,
+    ex3_3: 34,
+    ch3_check_yourself: 9,
+    ch3_revision: 45,
+    ch3_mcq: 14,
+    ch3_exam_zone: 10,
+  };
+  const expectedCh4: Record<string, number> = {
     ex4_1: 42,
     ex4_2: 18,
     ex4_3: 44,
@@ -16,19 +31,31 @@ test('exercise groups match expected structure and question counts', () => {
     exam_zone: 11,
   };
 
+  assert.equal(CH3_EXERCISES.length, 7);
+  for (const group of CH3_EXERCISES) {
+    assert.equal(
+      group.questions.length,
+      expectedCh3[group.id],
+      `Expected ${expectedCh3[group.id]} questions in ${group.id}, got ${group.questions.length}`
+    );
+  }
+
   assert.equal(EXERCISE_GROUPS.length, 8);
   for (const group of EXERCISE_GROUPS) {
     assert.equal(
       group.questions.length,
-      expected[group.id],
-      `Expected ${expected[group.id]} questions in ${group.id}, got ${group.questions.length}`
+      expectedCh4[group.id],
+      `Expected ${expectedCh4[group.id]} questions in ${group.id}, got ${group.questions.length}`
     );
   }
+
+  assert.equal(CH3_EXERCISES.flatMap((g) => g.questions).length, 183);
   assert.equal(getAllQuestions().length, 248);
+  assert.equal(getAllChapterQuestions().length, 431);
 });
 
-test('all questions have unique IDs, non-empty parts, steps, answers, and valid visuals', () => {
-  const all = getAllQuestions();
+test('all 431 questions across Ch. 3 & Ch. 4 have unique IDs, non-empty parts, steps, answers, and valid visuals', () => {
+  const all = getAllChapterQuestions();
   const seenIds = new Set<string>();
 
   for (const q of all) {
@@ -75,10 +102,10 @@ test('all questions have unique IDs, non-empty parts, steps, answers, and valid 
   }
 });
 
-test('section checks exist on Ex 4.1 through Ex 4.4 with valid statements', () => {
-  const expectedIds = ['ex4_1', 'ex4_2', 'ex4_3', 'ex4_4'];
+test('section checks exist on Ex 3.1–3.3 and Ex 4.1–4.4 with valid statements', () => {
+  const expectedIds = ['ex3_1', 'ex3_2', 'ex3_3', 'ex4_1', 'ex4_2', 'ex4_3', 'ex4_4'];
   for (const id of expectedIds) {
-    const group = EXERCISE_GROUPS.find((g) => g.id === id);
+    const group = ALL_EXERCISE_GROUPS.find((g) => g.id === id);
     assert.ok(group?.sectionCheck && group.sectionCheck.length >= 4, `${id} missing sectionCheck`);
   }
 });

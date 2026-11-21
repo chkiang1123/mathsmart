@@ -17,7 +17,13 @@ export type DrillArchetype =
   | 'discriminant-range'
   | 'vertex-form'
   | 'completing-square'
-  | 'optimization-geometry';
+  | 'optimization-geometry'
+  | 'ch3-line-forms'
+  | 'ch3-general-form'
+  | 'ch3-parallel-perp'
+  | 'ch3-inclination'
+  | 'ch3-intersections'
+  | 'ch3-triangle-geometry';
 
 export interface DrillQuestion {
   id: string;
@@ -45,7 +51,23 @@ export const ARCHETYPE_LABELS: Record<DrillArchetype, string> = {
   'vertex-form': 'Vertex Form Properties',
   'completing-square': 'Completing the Square',
   'optimization-geometry': 'Quadratic Optimization',
+  'ch3-line-forms': 'Equations of Straight Lines',
+  'ch3-general-form': 'General Form: Slope & Intercepts',
+  'ch3-parallel-perp': 'Parallel & Perpendicular Lines',
+  'ch3-inclination': 'Inclination & Slope Angles',
+  'ch3-intersections': 'Intersections of Straight Lines',
+  'ch3-triangle-geometry': 'Perpendicular Bisectors, Centres & Area',
 };
+
+const CH3_EXERCISE_IDS = new Set<ExerciseId>([
+  'ex3_1',
+  'ex3_2',
+  'ex3_3',
+  'ch3_check_yourself',
+  'ch3_revision',
+  'ch3_mcq',
+  'ch3_exam_zone',
+]);
 
 function mulberry32(seed: number): () => number {
   let a = seed >>> 0;
@@ -109,6 +131,60 @@ export function formatVertexForm(a: number, h: number, k: number): string {
 export function classifyQuestionArchetype(q: QuestionItem): DrillArchetype {
   const topicLower = q.topic.toLowerCase();
   const stmtLower = q.statement.toLowerCase();
+
+  // Chapter 3: Equations of Straight Lines (classify strictly into straight-line archetypes)
+  if (CH3_EXERCISE_IDS.has(q.exerciseId)) {
+    if (
+      topicLower.includes('bisector') ||
+      topicLower.includes('median') ||
+      topicLower.includes('altitude') ||
+      topicLower.includes('orthocentre') ||
+      topicLower.includes('circumcentre') ||
+      topicLower.includes('centroid') ||
+      topicLower.includes('rhombus') ||
+      topicLower.includes('equidistant') ||
+      topicLower.includes('area') ||
+      stmtLower.includes('perpendicular bisector') ||
+      stmtLower.includes('orthocentre') ||
+      stmtLower.includes('circumcentre')
+    ) {
+      return 'ch3-triangle-geometry';
+    }
+    if (
+      topicLower.includes('inclination') ||
+      stmtLower.includes('inclination')
+    ) {
+      return 'ch3-inclination';
+    }
+    if (
+      q.exerciseId === 'ex3_3' ||
+      topicLower.includes('intersection') ||
+      topicLower.includes('concurrent') ||
+      topicLower.includes('coincident') ||
+      stmtLower.includes('points of intersection') ||
+      stmtLower.includes('intersect at')
+    ) {
+      return 'ch3-intersections';
+    }
+    if (
+      topicLower.includes('parallel') ||
+      topicLower.includes('perpendicular') ||
+      stmtLower.includes('parallel to') ||
+      stmtLower.includes('perpendicular to')
+    ) {
+      return 'ch3-parallel-perp';
+    }
+    if (
+      q.exerciseId === 'ex3_2' ||
+      topicLower.includes('general form') ||
+      topicLower.includes('slope & intercept') ||
+      topicLower.includes('graphical') ||
+      topicLower.includes('constants')
+    ) {
+      return 'ch3-general-form';
+    }
+    return 'ch3-line-forms';
+  }
 
   if (q.visual.kind === 'vertical-line-test' || topicLower.includes('function vs non-function')) {
     return 'vertical-line-test';
@@ -1193,6 +1269,434 @@ export function generateDrillQuestion(
             showVertex: { x: optW, y: maxArea, label: `Max (${optW}, ${maxArea})` },
             xRange: [0, totalFence / 2 + 2],
             yRange: [0, maxArea + Math.round(maxArea * 0.15)],
+          },
+        }),
+      };
+    }
+
+    case 'ch3-line-forms': {
+      const m = pick(rng, [-3, -2, -1, 2, 3, 4]);
+      const x1 = pick(rng, [-4, -3, -2, 1, 2, 3]);
+      const y1 = pick(rng, [-5, -3, -1, 2, 4, 6]);
+      const dx = pick(rng, [2, 3, 4]);
+      const x2 = x1 + dx;
+      const y2 = y1 + m * dx;
+      const c = y1 - m * x1;
+      const eq = `y = ${formatLinearPoly(m, c)}`;
+
+      return {
+        id,
+        archetype,
+        archetypeLabel,
+        sourceQuestionId: source.id,
+        sourceTitle,
+        variationNumber,
+        quickCheckLabel: 'Enter the y-intercept of L',
+        acceptableAnswers: [String(c), `c=${c}`, `y=${c}`],
+        answerPlaceholder: `e.g. ${c}`,
+        question: makeDrillQuestionItem({
+          id,
+          exerciseId: source.exerciseId,
+          level: source.level,
+          topic: archetypeLabel,
+          variationNumber,
+          statement: `A straight line L passes through A(${x1}, ${y1}) and B(${x2}, ${y2}). Find (a) the slope of L; (b) the equation of L in slope-intercept form and its y-intercept.`,
+          parts: [
+            {
+              label: '(a)',
+              prompt: `Find the slope of L passing through A(${x1}, ${y1}) and B(${x2}, ${y2}).`,
+              strategy: 'Use the slope formula m = (y₂ - y₁)/(x₂ - x₁).',
+              steps: [
+                {
+                  title: 'Compute slope m',
+                  math: `m = (${y2} - (${y1}))/(${x2} - (${x1})) = ${y2 - y1}/${dx} = ${m}`,
+                  explanation: `The slope of L is ${m}.`,
+                },
+              ],
+              answer: String(m),
+            },
+            {
+              label: '(b)',
+              prompt: 'Find the equation of L and its y-intercept.',
+              strategy: `Apply point-slope form y - (${y1}) = ${m}(x - (${x1})).`,
+              steps: [
+                {
+                  title: 'Apply point-slope form',
+                  math: `y - (${y1}) = ${m}(x - (${x1})) ⇒ ${eq}`,
+                  explanation: `Expanding gives ${eq}, so the y-intercept is ${c}.`,
+                },
+              ],
+              answer: `${eq}; y-intercept = ${c}`,
+            },
+          ],
+          visual: {
+            kind: 'coordinate',
+            title: eq,
+            curves: [{ kind: 'linear', m, c, label: `L: ${eq}`, color: '#0284c7' }],
+            points: [
+              { x: x1, y: y1, label: `A(${x1}, ${y1})`, color: '#10b981' },
+              { x: x2, y: y2, label: `B(${x2}, ${y2})`, color: '#10b981' },
+              { x: 0, y: c, label: `(0, ${c})`, color: '#dc2626' },
+            ],
+            xRange: [Math.min(-6, x1 - 2), Math.max(6, x2 + 2)],
+            yRange: [Math.min(-10, y1 - 3, y2 - 3, c - 2), Math.max(10, y1 + 3, y2 + 3, c + 2)],
+          },
+        }),
+      };
+    }
+
+    case 'ch3-general-form': {
+      const a = pick(rng, [2, 3, 4, 5]);
+      const b = pick(rng, [-5, -4, -3, -2, 2, 3, 4]);
+      const xInt = pick(rng, [-6, -4, -3, -2, 2, 3, 4, 6]);
+      const c = -a * xInt; // Ax + By + C = 0 has exact x-intercept xInt
+      const slopeNum = -a;
+      const slopeDen = b;
+      const slopeVal = slopeNum / slopeDen;
+      const yIntVal = -c / b;
+      const bTerm = b >= 0 ? `+ ${b}y` : `- ${Math.abs(b)}y`;
+      const cTerm = c >= 0 ? `+ ${c}` : `- ${Math.abs(c)}`;
+      const eq = `${a}x ${bTerm} ${cTerm} = 0`;
+      const yIntDisplay = Number.isInteger(yIntVal) ? String(yIntVal) : `${-c}/${b}`;
+
+      return {
+        id,
+        archetype,
+        archetypeLabel,
+        sourceQuestionId: source.id,
+        sourceTitle,
+        variationNumber,
+        quickCheckLabel: 'Enter the x-intercept of L',
+        acceptableAnswers: [String(xInt), `x=${xInt}`],
+        answerPlaceholder: `e.g. ${xInt}`,
+        question: makeDrillQuestionItem({
+          id,
+          exerciseId: source.exerciseId,
+          level: source.level,
+          topic: archetypeLabel,
+          variationNumber,
+          statement: `Consider the straight line L: ${eq}. Find (a) the x-intercept of L; (b) the slope and y-intercept of L.`,
+          parts: [
+            {
+              label: '(a)',
+              prompt: 'Find the x-intercept of L.',
+              strategy: 'Substitute y = 0 into the general form equation and solve for x.',
+              steps: [
+                {
+                  title: 'Put y = 0',
+                  math: `${a}x ${cTerm} = 0 ⇒ ${a}x = ${-c} ⇒ x = ${xInt}`,
+                  explanation: `L cuts the x-axis at (${xInt}, 0), so the x-intercept is ${xInt}.`,
+                },
+              ],
+              answer: String(xInt),
+            },
+            {
+              label: '(b)',
+              prompt: 'Find the slope and y-intercept of L.',
+              strategy: 'Use slope = -A/B and y-intercept = -C/B.',
+              steps: [
+                {
+                  title: 'Apply general form formulas',
+                  math: `slope = -${a}/(${b}) = ${Number.isInteger(slopeVal) ? slopeVal : `${slopeNum}/${slopeDen}`}; y-intercept = -(${c})/(${b}) = ${yIntDisplay}`,
+                  explanation: 'Compare directly with Ax + By + C = 0.',
+                },
+              ],
+              answer: `slope = ${Number.isInteger(slopeVal) ? slopeVal : `${slopeNum}/${slopeDen}`}, y-intercept = ${yIntDisplay}`,
+            },
+          ],
+          visual: {
+            kind: 'coordinate',
+            title: eq,
+            curves: [{ kind: 'linear', m: slopeVal, c: yIntVal, label: eq, color: '#0284c7' }],
+            points: [
+              { x: xInt, y: 0, label: `(${xInt}, 0)`, color: '#dc2626' },
+              { x: 0, y: yIntVal, label: `(0, ${yIntDisplay})`, color: '#10b981' },
+            ],
+            xRange: [Math.min(-8, xInt - 2), Math.max(8, xInt + 2)],
+            yRange: [Math.min(-8, Math.floor(yIntVal) - 2), Math.max(8, Math.ceil(yIntVal) + 2)],
+          },
+        }),
+      };
+    }
+
+    case 'ch3-parallel-perp': {
+      const isPerp = rng() > 0.45;
+      const a1 = pick(rng, [2, 3, 4]);
+      const b1 = pick(rng, [-3, -2, 2, 3, 5]);
+      const c1 = pick(rng, [-12, -6, 6, 12]);
+      const scale = pick(rng, [2, 3]);
+      const b2 = isPerp ? a1 * scale : b1 * scale;
+      const kVal = isPerp ? -b1 * scale : a1 * scale;
+      const c2 = pick(rng, [-10, -5, 5, 11]);
+      const l1Str = `${a1}x ${b1 >= 0 ? `+ ${b1}y` : `- ${Math.abs(b1)}y`} ${c1 >= 0 ? `+ ${c1}` : `- ${Math.abs(c1)}`} = 0`;
+      const l2Str = `kx ${b2 >= 0 ? `+ ${b2}y` : `- ${Math.abs(b2)}y`} ${c2 >= 0 ? `+ ${c2}` : `- ${Math.abs(c2)}`} = 0`;
+      const relationWord = isPerp ? 'perpendicular to each other' : 'parallel';
+
+      return {
+        id,
+        archetype,
+        archetypeLabel,
+        sourceQuestionId: source.id,
+        sourceTitle,
+        variationNumber,
+        quickCheckLabel: 'Enter the value of k',
+        acceptableAnswers: [String(kVal), `k=${kVal}`, `k = ${kVal}`],
+        answerPlaceholder: `e.g. ${kVal}`,
+        question: makeDrillQuestionItem({
+          id,
+          exerciseId: source.exerciseId,
+          level: source.level,
+          topic: archetypeLabel,
+          variationNumber,
+          statement: `If the straight lines L₁: ${l1Str} and L₂: ${l2Str} are ${relationWord}, find the value of k.`,
+          parts: [
+            {
+              label: 'Main',
+              prompt: `Find k so that L₁ and L₂ are ${relationWord}.`,
+              strategy: isPerp
+                ? 'Use the perpendicular condition m₁ × m₂ = -1.'
+                : 'Use the parallel condition m₁ = m₂.',
+              steps: [
+                {
+                  title: 'Express slopes m₁ and m₂',
+                  math: `m₁ = -${a1}/(${b1}), m₂ = -k/(${b2})`,
+                  explanation: 'Use m = -A/B for each general-form equation.',
+                },
+                {
+                  title: isPerp ? 'Set m₁ × m₂ = -1 and solve' : 'Set m₁ = m₂ and solve',
+                  math: isPerp
+                    ? `(-${a1}/${b1})(-k/${b2}) = -1 ⇒ ${a1}k = -${b1 * b2} ⇒ k = ${kVal}`
+                    : `-${a1}/${b1} = -k/${b2} ⇒ k = ${kVal}`,
+                  explanation: `Solving gives k = ${kVal}.`,
+                },
+              ],
+              answer: String(kVal),
+            },
+          ],
+          visual: {
+            kind: 'coordinate',
+            title: isPerp ? `L₁ ⊥ L₂ (k = ${kVal})` : `L₁ ∥ L₂ (k = ${kVal})`,
+            curves: [
+              { kind: 'linear', m: -a1 / b1, c: -c1 / b1, label: 'L₁', color: '#0284c7' },
+              { kind: 'linear', m: -kVal / b2, c: -c2 / b2, label: 'L₂', color: '#10b981' },
+            ],
+            xRange: [-8, 8],
+            yRange: [-8, 8],
+          },
+        }),
+      };
+    }
+
+    case 'ch3-inclination': {
+      const choice = pick(rng, [
+        { deg: 45, m: 1, mLabel: '1' },
+        { deg: 135, m: -1, mLabel: '-1' },
+      ]);
+      const px = pick(rng, [-4, -2, 2, 3, 5]);
+      const py = pick(rng, [-3, -1, 1, 4, 6]);
+      const c = py - choice.m * px;
+      const eq = `y = ${formatLinearPoly(choice.m, c)}`;
+
+      return {
+        id,
+        archetype,
+        archetypeLabel,
+        sourceQuestionId: source.id,
+        sourceTitle,
+        variationNumber,
+        quickCheckLabel: 'Enter the y-intercept of L',
+        acceptableAnswers: [String(c), `y=${c}`],
+        answerPlaceholder: `e.g. ${c}`,
+        question: makeDrillQuestionItem({
+          id,
+          exerciseId: source.exerciseId,
+          level: source.level,
+          topic: archetypeLabel,
+          variationNumber,
+          statement: `A straight line L has inclination ${choice.deg}° and passes through P(${px}, ${py}). Find (a) the slope of L; (b) the equation of L and its y-intercept.`,
+          parts: [
+            {
+              label: '(a)',
+              prompt: `Find the slope of L with inclination ${choice.deg}°.`,
+              strategy: 'Use m = tan θ.',
+              steps: [
+                {
+                  title: 'Apply m = tan θ',
+                  math: `m = tan ${choice.deg}° = ${choice.mLabel}`,
+                  explanation: `An inclination of ${choice.deg}° gives slope ${choice.mLabel}.`,
+                },
+              ],
+              answer: choice.mLabel,
+            },
+            {
+              label: '(b)',
+              prompt: 'Find the equation of L and its y-intercept.',
+              strategy: `Use point-slope form through P(${px}, ${py}) with slope ${choice.mLabel}.`,
+              steps: [
+                {
+                  title: 'Apply point-slope form',
+                  math: `y - (${py}) = ${choice.mLabel}(x - (${px})) ⇒ ${eq}`,
+                  explanation: `So the y-intercept is ${c}.`,
+                },
+              ],
+              answer: `${eq}; y-intercept = ${c}`,
+            },
+          ],
+          visual: {
+            kind: 'coordinate',
+            title: `${eq} (θ = ${choice.deg}°)`,
+            curves: [{ kind: 'linear', m: choice.m, c, label: `L: ${eq}`, color: '#0284c7' }],
+            points: [
+              { x: px, y: py, label: `P(${px}, ${py})`, color: '#10b981' },
+              { x: 0, y: c, label: `(0, ${c})`, color: '#dc2626' },
+            ],
+            xRange: [Math.min(-6, px - 3), Math.max(6, px + 3)],
+            yRange: [Math.min(-6, py - 3, c - 2), Math.max(8, py + 3, c + 2)],
+          },
+        }),
+      };
+    }
+
+    case 'ch3-intersections': {
+      const px = pick(rng, [-4, -3, -2, -1, 1, 2, 3, 4, 5]);
+      const py = pick(rng, [-4, -2, 1, 2, 3, 4]);
+      const m1 = pick(rng, [1, 2, 3]);
+      const m2 = pick(rng, [-3, -2, -1]);
+      const c1 = py - m1 * px;
+      const c2 = py - m2 * px;
+      const eq1 = `${m1}x - y ${c1 >= 0 ? `+ ${c1}` : `- ${Math.abs(c1)}`} = 0`;
+      const eq2 = `${-m2}x + y ${-c2 >= 0 ? `+ ${-c2}` : `- ${Math.abs(c2)}`} = 0`;
+
+      return {
+        id,
+        archetype,
+        archetypeLabel,
+        sourceQuestionId: source.id,
+        sourceTitle,
+        variationNumber,
+        quickCheckLabel: 'Enter the intersection coordinates (e.g. (2, 3))',
+        acceptableAnswers: [`(${px}, ${py})`, `(${px},${py})`, `${px},${py}`, `${px}, ${py}`],
+        answerPlaceholder: `(${px}, ${py})`,
+        question: makeDrillQuestionItem({
+          id,
+          exerciseId: source.exerciseId,
+          level: source.level,
+          topic: archetypeLabel,
+          variationNumber,
+          statement: `Find the coordinates of the point of intersection P of the straight lines L₁: ${eq1} and L₂: ${eq2}.`,
+          parts: [
+            {
+              label: 'Main',
+              prompt: 'Solve L₁ and L₂ simultaneously.',
+              strategy: 'Add L₁ and L₂ directly to eliminate y.',
+              steps: [
+                {
+                  title: 'Add L₁ and L₂ to eliminate y',
+                  math: `(${m1} + ${-m2})x + (${c1 - c2}) = 0 ⇒ ${m1 - m2}x = ${c2 - c1} ⇒ x = ${px}`,
+                  explanation: 'Adding the two equations eliminates y immediately.',
+                },
+                {
+                  title: `Substitute x = ${px} into L₁ to find y`,
+                  math: `y = ${m1}(${px}) ${c1 >= 0 ? `+ ${c1}` : `- ${Math.abs(c1)}`} = ${py}`,
+                  explanation: `The point of intersection is P(${px}, ${py}).`,
+                },
+              ],
+              answer: `(${px}, ${py})`,
+            },
+          ],
+          visual: {
+            kind: 'coordinate',
+            title: `Intersection P(${px}, ${py})`,
+            curves: [
+              { kind: 'linear', m: m1, c: c1, label: 'L₁', color: '#0284c7' },
+              { kind: 'linear', m: m2, c: c2, label: 'L₂', color: '#f59e0b' },
+            ],
+            points: [{ x: px, y: py, label: `P(${px}, ${py})`, color: '#10b981' }],
+            xRange: [px - 6, px + 6],
+            yRange: [py - 6, py + 6],
+          },
+        }),
+      };
+    }
+
+    case 'ch3-triangle-geometry': {
+      // Construct a clean perpendicular bisector problem with integer mid-point and integer slope
+      const mx = pick(rng, [-3, -2, 1, 2, 3, 4]);
+      const my = pick(rng, [-2, -1, 1, 2, 3, 4]);
+      const mAB = pick(rng, [1, -1]);
+      const halfDx = pick(rng, [2, 3, 4]);
+      const ax = mx - halfDx;
+      const ay = my - mAB * halfDx;
+      const bx = mx + halfDx;
+      const by = my + mAB * halfDx;
+      const mPerp = -1 / mAB;
+      const cPerp = my - mPerp * mx;
+      const perpEq = `y = ${formatLinearPoly(mPerp, cPerp)}`;
+
+      return {
+        id,
+        archetype,
+        archetypeLabel,
+        sourceQuestionId: source.id,
+        sourceTitle,
+        variationNumber,
+        quickCheckLabel: 'Enter the mid-point M of AB (e.g. (2, 3))',
+        acceptableAnswers: [`(${mx}, ${my})`, `(${mx},${my})`, `${mx},${my}`, `${mx}, ${my}`],
+        answerPlaceholder: `(${mx}, ${my})`,
+        question: makeDrillQuestionItem({
+          id,
+          exerciseId: source.exerciseId,
+          level: source.level,
+          topic: archetypeLabel,
+          variationNumber,
+          statement: `Given A(${ax}, ${ay}) and B(${bx}, ${by}), find (a) the mid-point M of AB; (b) the equation of the perpendicular bisector of AB.`,
+          parts: [
+            {
+              label: '(a)',
+              prompt: 'Find the mid-point M of AB.',
+              strategy: 'Use the mid-point formula ((x₁ + x₂)/2, (y₁ + y₂)/2).',
+              steps: [
+                {
+                  title: 'Apply mid-point formula',
+                  math: `M = ((${ax} + ${bx})/2, (${ay} + ${by})/2) = (${mx}, ${my})`,
+                  explanation: `The mid-point M is (${mx}, ${my}).`,
+                },
+              ],
+              answer: `(${mx}, ${my})`,
+            },
+            {
+              label: '(b)',
+              prompt: 'Find the equation of the perpendicular bisector of AB.',
+              strategy: 'Find slope m_AB, take negative reciprocal m_⊥, and use point-slope form through M.',
+              steps: [
+                {
+                  title: 'Compute perpendicular slope',
+                  math: `m_AB = (${by} - (${ay}))/(${bx} - (${ax})) = ${mAB} ⇒ m_⊥ = ${mPerp}`,
+                  explanation: 'Perpendicular lines satisfy m_AB × m_⊥ = -1.',
+                },
+                {
+                  title: 'Write equation through M',
+                  math: `y - (${my}) = ${mPerp}(x - (${mx})) ⇒ ${perpEq}`,
+                  explanation: `The perpendicular bisector of AB is ${perpEq}.`,
+                },
+              ],
+              answer: perpEq,
+            },
+          ],
+          visual: {
+            kind: 'coordinate',
+            title: `Perp. Bisector of AB: ${perpEq}`,
+            curves: [
+              { kind: 'linear', m: mAB, c: ay - mAB * ax, label: 'Line AB', color: '#94a3b8', dashed: true },
+              { kind: 'linear', m: mPerp, c: cPerp, label: `Perp. bisector: ${perpEq}`, color: '#10b981' },
+            ],
+            points: [
+              { x: ax, y: ay, label: `A(${ax}, ${ay})`, color: '#0284c7' },
+              { x: bx, y: by, label: `B(${bx}, ${by})`, color: '#0284c7' },
+              { x: mx, y: my, label: `M(${mx}, ${my})`, color: '#dc2626' },
+            ],
+            xRange: [Math.min(ax, bx) - 3, Math.max(ax, bx) + 3],
+            yRange: [Math.min(ay, by) - 3, Math.max(ay, by) + 3],
           },
         }),
       };

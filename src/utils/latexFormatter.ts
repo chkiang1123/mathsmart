@@ -37,6 +37,16 @@ const PROSE_WORDS = new Set([
   // Common abbreviations & labels in textbook
   'max.', 'min.', 'e.g.', 'i.e.', 'fig.', 'km', 'cm', 'mm', 'kg', 'hr', 'hrs', 'sec',
   'hkdse', 'hkcee', 'hk', 'q1', 'q2', 'q3',
+  // Chapter 3 geometry & straight-line terms
+  'altitude', 'altitudes', 'anticlockwise', 'base', 'below', 'bisector', 'bounded', 'centroid',
+  'circumcentre', 'clockwise', 'coincident', 'collinear', 'cor', 'cor.', 'correct', 'diagonal',
+  'diagonals', 'distance', 'exceeds', 'fig', 'general', 'inclination', 'infinite', 'infinitely',
+  'intersect', 'intersecting', 'intersection', 'intersections', 'isosceles', 'joining', 'larger',
+  'leftwards', 'lines', 'list', 'median', 'medians', 'mid-point', 'midpoint', 'origin',
+  'orthocentre', 'parallelogram', 'pass', 'passing', 'plane', 'quadrilateral', 'reasonable',
+  'refer', 'reflected', 'region', 'rewrite', 'rhombus', 'rightwards', 'rotated', 'shortest',
+  'show', 'sig', 'sig.', 'slopes', 'someone', 'sq', 'sq.', 'suppose', 'surd', 'translated',
+  'vertically', 'vertices', 'write',
 ]);
 
 function replaceUnicodeSuperscripts(s: string): string {
@@ -297,7 +307,10 @@ export function mathToLatex(raw: string): string {
   s = s.replace(/△/g, '\\triangle ');
   s = s.replace(/∠/g, '\\angle ');
   s = s.replace(/⊥/g, ' \\perp ');
+  s = s.replace(/∥/g, ' \\parallel ');
+  s = s.replace(/\/\//g, ' \\parallel ');
   s = s.replace(/°/g, '^{\\circ}');
+  s = s.replace(/\btan\b/g, '\\tan');
   s = s.replace(/%/g, '\\%');
   // Convert ^(...) or ^-1 etc
   s = s.replace(/\^\(([^)]+)\)/g, '^{$1}');
@@ -311,7 +324,8 @@ export function mathToLatex(raw: string): string {
 
 function isPureMathToken(token: string): boolean {
   if (!token) return false;
-  if (/[²³⁵⁶⁻⁰¹⁴⁷⁸⁹₀₁₂₃₄₅₆₇₈₉√⇒⇔∴→≥≤≠≈±×÷·ΔαβθΓ△∠⊥°^]/.test(token)) return true;
+  if (/[²³⁵⁶⁻⁰¹⁴⁷⁸⁹₀₁₂₃₄₅₆₇₈₉√⇒⇔∴→≥≤≠≈±×÷·ΔαβθΓ△∠⊥∥°^]/.test(token)) return true;
+  if (token === '//' || token === 'tan') return true;
   if (/^[=<>+\-*/(),[\]{}|]+$/.test(token)) return true;
   // Function calls like f(x), g(2), f(a+b), h(t)
   if (/^[a-zA-Z]\([^)]+\)$/.test(token)) return true;

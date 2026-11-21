@@ -3,6 +3,12 @@ import { motion } from 'motion/react';
 import type { CircleSpec, CurveSpec, PointSpec, PolygonSpec } from '../../types/math';
 import { formatNum, generateTicks, sampleCurvePoints } from '../../utils/mathEngine';
 import { computeGraphStepHighlights } from '../../utils/graphStepHighlighter';
+import {
+  computePlotLabelLayout,
+  estimateLabelSize,
+  type PlotLabelInput,
+  type PlotRect,
+} from '../../utils/plotLabelLayout';
 import type { StepProgressState } from '../StepAnalyzer';
 import { MathText } from '../MathText';
 
@@ -243,6 +249,255 @@ export const CoordinatePlot: React.FC<CoordinatePlotProps> = ({
 
   const stepNum = stepProgress?.revealed ?? 0;
 
+  // Visible ticks deduplicated around origin and main axes
+  const visibleXTicks = useMemo(
+    () =>
+      xTicks
+        .filter((tx) => {
+          if (Math.abs(tx) < 1e-9 && xAxisVisible && yAxisVisible) return false;
+          if (yAxisVisible && Math.abs(toPxX(tx) - axisX) < 18) return false;
+          return true;
+        })
+        .map((tx) => {
+          const px = toPxX(tx);
+          const labelY = Math.min(height - 10, Math.max(pad.top + 16, axisY + 14));
+          return { tx, px, labelY, text: formatNum(tx, 1) };
+        }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [xTicks, xAxisVisible, yAxisVisible, axisX, axisY, xMin, xMax]
+  );
+
+  const visibleYTicks = useMemo(
+    () =>
+      yTicks
+        .filter((ty) => {
+          if (Math.abs(ty) < 1e-9 && xAxisVisible && yAxisVisible) return false;
+          if (xAxisVisible && Math.abs(toPxY(ty) - axisY) < 12) return false;
+          return true;
+        })
+        .map((ty) => {
+          const py = toPxY(ty);
+          const px = yAxisVisible ? axisX - 6 : pad.left - 6;
+          return { ty, px, py, text: formatNum(ty, 1) };
+        }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [yTicks, xAxisVisible, yAxisVisible, axisX, axisY, yMin, yMax]
+  );
+
+  const symLabelPos = useMemo(() => {
+    if (typeof showAxisOfSymmetry !== 'number' || !Number.isFinite(showAxisOfSymmetry)) {
+      return null;
+    }
+    const symPx = Math.min(
+      pad.left + plotW - 34,
+      Math.max(pad.left + 34, toPxX(showAxisOfSymmetry))
+    );
+    const nearYAxisLabel = yAxisVisible && Math.abs(symPx - (axisX + 10)) < 48;
+    const text = `x = ${formatNum(showAxisOfSymmetry, 2)}`;
+    const size = estimateLabelSize(text, 10);
+    const yBaseline = nearYAxisLabel ? pad.top + 26 : pad.top + 14;
+    return {
+      x: symPx,
+      y: yBaseline,
+      text,
+      box: { x: symPx - size.w / 2, y: yBaseline - size.h + 3, w: size.w, h: size.h },
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showAxisOfSymmetry, yAxisVisible, axisX, xMin, xMax]);
+
+  const placedLabels = useMemo(() => {
+    const rawInputs: PlotLabelInput[] = [];
+    const dotCenters: { x: number; y: number }[] = [];
+
+    polygons.forEach((poly, idx) => {
+      poly.points.forEach((pt, pi) => {
+        if (pt.label) {
+          rawInputs.push({
+            id: `poly-${idx}-${pi}`,
+            px: toPxX(pt.x),
+            py: toPxY(pt.y),
+            text: pt.label,
+            color: 'var(--plot-point-label)',
+            category: 'polygon',
+            fontSize: 10.5,
+            fontWeight: '600',
+          });
+        }
+      });
+    });
+
+    showRoots?.forEach((r, ri) => {
+      const px = toPxX(r);
+      const py = toPxY(0);
+      dotCenters.push({ x: px, y: py });
+      rawInputs.push({
+        id: `root-${ri}`,
+        px,
+        py,
+        text: `(${formatNum(r, 2)}, 0)`,
+        color: 'var(--plot-root-label)',
+        category: 'root',
+        fontSize: 10,
+        fontWeight: '600',
+      });
+    });
+
+    if (showVertex && Number.isFinite(showVertex.x) && Number.isFinite(showVertex.y)) {
+      const px = toPxX(showVertex.x);
+      const py = toPxY(showVertex.y);
+      dotCenters.push({ x: px, y: py });
+      rawInputs.push({
+        id: 'vertex-main',
+        px,
+        py,
+        text:
+          showVertex.label || `(${formatNum(showVertex.x, 2)}, ${formatNum(showVertex.y, 2)})`,
+        color: 'var(--plot-vertex-label)',
+        category: 'vertex',
+        fontSize: 10.5,
+        fontWeight: '700',
+      });
+    }
+
+    allPoints
+      .filter(
+        (pt) =>
+          !interactivePoint ||
+          Math.hypot(pt.x - interactivePoint.x, pt.y - interactivePoint.y) > 0.05
+      )
+      .forEach((pt, pi) => {
+        const px = toPxX(pt.x);
+        const py = toPxY(pt.y);
+        dotCenters.push({ x: px, y: py });
+        if (pt.label) {
+          const isHighlighted = highlights.highlightPointIndices.includes(pi);
+          rawInputs.push({
+            id: `pt-${pi}`,
+            px,
+            py,
+            text: pt.label,
+            color: 'var(--plot-point-label)',
+            category: 'point',
+            fontSize: 10.5,
+            fontWeight: isHighlighted ? '700' : '600',
+          });
+        }
+      });
+
+    highlights.synthesizedFocusPoints.forEach((pt, fi) => {
+      const px = toPxX(pt.x);
+      const py = toPxY(pt.y);
+      dotCenters.push({ x: px, y: py });
+      if (pt.label) {
+        rawInputs.push({
+          id: `synth-${fi}`,
+          px,
+          py,
+          text: pt.label,
+          color: pt.color || '#38bdf8',
+          category: 'synth',
+          fontSize: 10.5,
+          fontWeight: '700',
+        });
+      }
+    });
+
+    if (interactivePoint) {
+      const px = toPxX(interactivePoint.x);
+      const py = toPxY(interactivePoint.y);
+      dotCenters.push({ x: px, y: py });
+      rawInputs.push({
+        id: 'interactive-main',
+        px,
+        py,
+        text: `(${formatNum(interactivePoint.x, 2)}, ${formatNum(interactivePoint.y, 2)})`,
+        color: '#38bdf8',
+        category: 'interactive',
+        fontSize: 11,
+        fontWeight: '700',
+      });
+    }
+
+    // Build static obstacles inside plot area (ticks, O, yLabel, callouts)
+    const obstacles: PlotRect[] = [];
+    for (const xt of visibleXTicks) {
+      const { w, h } = estimateLabelSize(xt.text, 10);
+      obstacles.push({ x: xt.px - w / 2, y: xt.labelY - h + 3, w, h });
+    }
+    for (const yt of visibleYTicks) {
+      const { w, h } = estimateLabelSize(yt.text, 10);
+      obstacles.push({ x: yt.px - w, y: yt.py - h / 2, w, h });
+    }
+    if (xAxisVisible && yAxisVisible) {
+      obstacles.push({ x: axisX - 18, y: axisY + 2, w: 16, h: 15 });
+    }
+    obstacles.push({ x: axisX + 4, y: pad.top - 2, w: 18, h: 16 });
+    if (symLabelPos) {
+      obstacles.push(symLabelPos.box);
+    }
+    if (horizontalThreshold?.label) {
+      const { w, h } = estimateLabelSize(horizontalThreshold.label, 10);
+      const ty = Math.max(pad.top + 12, toPxY(horizontalThreshold.y) - 5);
+      obstacles.push({ x: pad.left + plotW - 6 - w, y: ty - h + 3, w, h });
+    }
+    if (highlights.verticalShiftGuide) {
+      const vg = highlights.verticalShiftGuide;
+      const vx = toPxX(vg.x);
+      const vy1 = toPxY(vg.yFrom);
+      const vy2 = toPxY(vg.yTo);
+      const pillX = vx + 54 > pad.left + plotW ? vx - 50 : vx + 8;
+      obstacles.push({ x: pillX, y: (vy1 + vy2) / 2 - 11, w: 42, h: 20 });
+    }
+
+    // Decimate curves into sample points so labels avoid sitting right over line strokes
+    const curveSamples: { x: number; y: number }[] = [];
+    for (const sc of sampledCurves) {
+      for (const seg of sc.segments) {
+        for (let i = 0; i < seg.length; i += 6) {
+          curveSamples.push({ x: toPxX(seg[i].x), y: toPxY(seg[i].y) });
+        }
+      }
+    }
+    for (const ov of sampledOverlays) {
+      for (let i = 0; i < ov.pts.length; i += 6) {
+        curveSamples.push({ x: toPxX(ov.pts[i].x), y: toPxY(ov.pts[i].y) });
+      }
+    }
+
+    return computePlotLabelLayout(rawInputs, {
+      bounds: { x: pad.left, y: pad.top, w: plotW, h: plotH },
+      obstacles,
+      dotCenters,
+      curveSamples,
+      axisX: yAxisVisible ? axisX : null,
+      axisY: xAxisVisible ? axisY : null,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    polygons,
+    showRoots,
+    showVertex,
+    allPoints,
+    interactivePoint,
+    highlights.highlightPointIndices,
+    highlights.synthesizedFocusPoints,
+    highlights.verticalShiftGuide,
+    visibleXTicks,
+    visibleYTicks,
+    xAxisVisible,
+    yAxisVisible,
+    axisX,
+    axisY,
+    symLabelPos,
+    horizontalThreshold,
+    sampledCurves,
+    sampledOverlays,
+    xMin,
+    xMax,
+    yMin,
+    yMax,
+  ]);
+
   return (
     <div className="rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900 p-3 sm:p-4 shadow-xs">
       {(title || hoverCoord || (stepProgress && stepProgress.revealed > 0)) && (
@@ -362,38 +617,31 @@ export const CoordinatePlot: React.FC<CoordinatePlotProps> = ({
           </text>
         )}
 
-        {/* Tick labels */}
-        {xTicks.map((tx) => {
-          const px = toPxX(tx);
-          const labelY = Math.min(height - 10, Math.max(pad.top + 16, axisY + 14));
-          return (
-            <text
-              key={`tx-${tx}`}
-              x={px}
-              y={labelY}
-              textAnchor="middle"
-              fontSize="10"
-              fill="var(--plot-tick)"
-            >
-              {formatNum(tx, 1)}
-            </text>
-          );
-        })}
-        {yTicks.map((ty) => {
-          const py = toPxY(ty);
-          return (
-            <text
-              key={`ty-${ty}`}
-              x={yAxisVisible ? axisX - 6 : pad.left - 6}
-              y={py + 3}
-              textAnchor="end"
-              fontSize="10"
-              fill="var(--plot-tick)"
-            >
-              {formatNum(ty, 1)}
-            </text>
-          );
-        })}
+        {/* Tick labels (0 omitted when Origin O is shown) */}
+        {visibleXTicks.map((xt) => (
+          <text
+            key={`tx-${xt.tx}`}
+            x={xt.px}
+            y={xt.labelY}
+            textAnchor="middle"
+            fontSize="10"
+            fill="var(--plot-tick)"
+          >
+            {xt.text}
+          </text>
+        ))}
+        {visibleYTicks.map((yt) => (
+          <text
+            key={`ty-${yt.ty}`}
+            x={yt.px}
+            y={yt.py + 3}
+            textAnchor="end"
+            fontSize="10"
+            fill="var(--plot-tick)"
+          >
+            {yt.text}
+          </text>
+        ))}
 
         {/* Clipped geometric content */}
         <g clipPath={`url(#${clipId})`}>
@@ -419,20 +667,6 @@ export const CoordinatePlot: React.FC<CoordinatePlotProps> = ({
                       : { duration: 0.25 }
                   }
                 />
-                {poly.points.map((pt, pi) =>
-                  pt.label ? (
-                    <text
-                      key={`pp-${pi}`}
-                      x={toPxX(pt.x) + 6}
-                      y={toPxY(pt.y) - 6}
-                      fontSize="11"
-                      fontWeight="600"
-                      fill="var(--plot-point-label)"
-                    >
-                      {pt.label}
-                    </text>
-                  ) : null
-                )}
               </g>
             );
           })}
@@ -619,7 +853,7 @@ export const CoordinatePlot: React.FC<CoordinatePlotProps> = ({
                     transition={{ duration: 0.35, delay: 0.25 }}
                   >
                     <rect
-                      x={vx + 8}
+                      x={vx + 54 > pad.left + plotW ? vx - 50 : vx + 8}
                       y={(vy1 + vy2) / 2 - 11}
                       width={42}
                       height={20}
@@ -627,7 +861,7 @@ export const CoordinatePlot: React.FC<CoordinatePlotProps> = ({
                       fill="#f59e0b"
                     />
                     <text
-                      x={vx + 29}
+                      x={(vx + 54 > pad.left + plotW ? vx - 50 : vx + 8) + 21}
                       y={(vy1 + vy2) / 2 + 3}
                       textAnchor="middle"
                       fontSize="11"
@@ -664,16 +898,6 @@ export const CoordinatePlot: React.FC<CoordinatePlotProps> = ({
                   stroke="#10b981"
                   strokeWidth={highlights.highlightRoots ? 2.8 : 2.2}
                 />
-                <text
-                  x={rx}
-                  y={ry - 9}
-                  textAnchor="middle"
-                  fontSize="10"
-                  fontWeight="600"
-                  fill="var(--plot-root-label)"
-                >
-                  ({formatNum(r, 2)}, 0)
-                </text>
               </g>
             );
           })}
@@ -704,17 +928,6 @@ export const CoordinatePlot: React.FC<CoordinatePlotProps> = ({
                     stroke="var(--plot-dot-bg)"
                     strokeWidth={1.8}
                   />
-                  <text
-                    x={Math.min(pad.left + plotW - 60, Math.max(pad.left + 60, vx))}
-                    y={vy > pad.top + 28 ? vy - 10 : vy + 16}
-                    textAnchor="middle"
-                    fontSize="10.5"
-                    fontWeight="700"
-                    fill="var(--plot-vertex-label)"
-                  >
-                    {showVertex.label ||
-                      `(${formatNum(showVertex.x, 2)}, ${formatNum(showVertex.y, 2)})`}
-                  </text>
                 </g>
               );
             })()}
@@ -750,22 +963,11 @@ export const CoordinatePlot: React.FC<CoordinatePlotProps> = ({
                     stroke={color}
                     strokeWidth={isHighlighted ? 2.5 : 2}
                   />
-                  {pt.label && (
-                    <text
-                      x={px + 7}
-                      y={py - 7}
-                      fontSize="10.5"
-                      fontWeight={isHighlighted ? '700' : '600'}
-                      fill="var(--plot-point-label)"
-                    >
-                      {pt.label}
-                    </text>
-                  )}
                 </g>
               );
             })}
 
-          {/* Dynamic focus points brought in by the active solution step */}
+          {/* Dynamic focus dots brought in by the active solution step */}
           {highlights.synthesizedFocusPoints.map((pt, fi) => {
             const px = toPxX(pt.x);
             const py = toPxY(pt.y);
@@ -793,15 +995,6 @@ export const CoordinatePlot: React.FC<CoordinatePlotProps> = ({
                   stroke="var(--plot-dot-bg)"
                   strokeWidth={2}
                 />
-                <text
-                  x={Math.min(pad.left + plotW - 55, Math.max(pad.left + 12, px + 8))}
-                  y={Math.max(pad.top + 14, py - 8)}
-                  fontSize="10.5"
-                  fontWeight="700"
-                  fill={color}
-                >
-                  {pt.label}
-                </text>
               </motion.g>
             );
           })}
@@ -816,17 +1009,47 @@ export const CoordinatePlot: React.FC<CoordinatePlotProps> = ({
                 stroke="var(--plot-dot-bg)"
                 strokeWidth={2}
               />
-              <text
-                x={Math.min(pad.left + plotW - 55, toPxX(interactivePoint.x) + 8)}
-                y={Math.max(pad.top + 14, toPxY(interactivePoint.y) - 8)}
-                fontSize="11"
-                fontWeight="700"
-                fill="#38bdf8"
-              >
-                ({formatNum(interactivePoint.x, 2)}, {formatNum(interactivePoint.y, 2)})
-              </text>
             </g>
           )}
+
+          {/* Unified collision-free label layer rendered on top of curves, polygons & dots */}
+          <g className="plot-labels">
+            {placedLabels.map((lbl) => (
+              <g key={lbl.id}>
+                {lbl.leaderLine && (
+                  <line
+                    x1={lbl.leaderLine.x1}
+                    y1={lbl.leaderLine.y1}
+                    x2={lbl.leaderLine.x2}
+                    y2={lbl.leaderLine.y2}
+                    stroke={lbl.color}
+                    strokeWidth={1}
+                    strokeDasharray="2 2"
+                    opacity={0.7}
+                  />
+                )}
+                <rect
+                  x={lbl.box.x}
+                  y={lbl.box.y}
+                  width={lbl.box.w}
+                  height={lbl.box.h}
+                  rx={3.5}
+                  fill="var(--plot-bg)"
+                  fillOpacity={0.88}
+                />
+                <text
+                  x={lbl.textX}
+                  y={lbl.textY}
+                  textAnchor={lbl.textAnchor}
+                  fontSize={lbl.fontSize}
+                  fontWeight={lbl.fontWeight}
+                  fill={lbl.color}
+                >
+                  {lbl.text}
+                </text>
+              </g>
+            ))}
+          </g>
 
           {hoverCoord && (
             <g opacity={0.55}>
@@ -865,17 +1088,28 @@ export const CoordinatePlot: React.FC<CoordinatePlotProps> = ({
           </text>
         )}
 
-        {typeof showAxisOfSymmetry === 'number' && Number.isFinite(showAxisOfSymmetry) && (
-          <text
-            x={Math.min(pad.left + plotW - 32, Math.max(pad.left + 32, toPxX(showAxisOfSymmetry)))}
-            y={pad.top + 14}
-            textAnchor="middle"
-            fontSize="10"
-            fontWeight="600"
-            fill="var(--plot-sym-label)"
-          >
-            x = {formatNum(showAxisOfSymmetry, 2)}
-          </text>
+        {symLabelPos && (
+          <g>
+            <rect
+              x={symLabelPos.box.x}
+              y={symLabelPos.box.y}
+              width={symLabelPos.box.w}
+              height={symLabelPos.box.h}
+              rx={3}
+              fill="var(--plot-bg)"
+              fillOpacity={0.9}
+            />
+            <text
+              x={symLabelPos.x}
+              y={symLabelPos.y}
+              textAnchor="middle"
+              fontSize="10"
+              fontWeight="600"
+              fill="var(--plot-sym-label)"
+            >
+              {symLabelPos.text}
+            </text>
+          </g>
         )}
       </svg>
 

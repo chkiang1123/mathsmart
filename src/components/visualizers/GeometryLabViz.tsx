@@ -62,7 +62,7 @@ const ScenarioBlueprintSvg: React.FC<{ scenario: GeometryScenario; x: number }> 
           <text x={45 + s1 + s2 / 2} y={baseY - s2 / 2 + 4} textAnchor="middle" fontSize="10.5" fontWeight="700" fill="var(--tile-wing-text)">
             {ySide.toFixed(1)}²
           </text>
-          <text x={45 + s1 / 2} y={baseY + 16} textAnchor="middle" fontSize="10" fill="var(--plot-label)">
+          <text x={45 + s1 / 2} y={baseY - s1 - 6} textAnchor="middle" fontSize="10" fill="var(--plot-label)">
             x = {x.toFixed(1)} cm
           </text>
           <text x={45 + s1 + s2 / 2} y={baseY + 16} textAnchor="middle" fontSize="10" fill="var(--tile-wing-text)">
@@ -164,8 +164,25 @@ const ScenarioBlueprintSvg: React.FC<{ scenario: GeometryScenario; x: number }> 
           <text x={x0 + s + 6} y={y0 + 4} fontSize="10.5" fontWeight="700" fill="var(--plot-label)">B</text>
           <text x={x0 + s + 6} y={y0 + s + 4} fontSize="10.5" fontWeight="700" fill="var(--plot-label)">C</text>
           <text x={x0 - 12} y={y0 + s + 4} fontSize="10.5" fontWeight="700" fill="var(--plot-label)">D</text>
-          <text x={Px + 6} y={Py + 4} fontSize="10.5" fontWeight="700" fill="var(--tile-x2-text)">P</text>
-          <text x={Qx - 4} y={Qy + 13} fontSize="10.5" fontWeight="700" fill="var(--tile-x2-text)">Q</text>
+          <text
+            x={x0 + s + (Math.abs(Py - y0) < 16 || Math.abs(Py - (y0 + s)) < 16 ? 20 : 8)}
+            y={Py + 4}
+            fontSize="10.5"
+            fontWeight="700"
+            fill="var(--tile-x2-text)"
+          >
+            P
+          </text>
+          <text
+            x={Math.min(x0 + s - 10, Math.max(x0 + 10, Qx))}
+            y={Qy + 14}
+            textAnchor="middle"
+            fontSize="10.5"
+            fontWeight="700"
+            fill="var(--tile-x2-text)"
+          >
+            Q
+          </text>
         </svg>
       );
     }
@@ -206,7 +223,14 @@ const ScenarioBlueprintSvg: React.FC<{ scenario: GeometryScenario; x: number }> 
           <text x={40 + dr + ad / 2} y={24 + ab / 2 + 4} textAnchor="middle" fontSize="10.5" fontWeight="700" fill="var(--tile-corner-text)">
             Park ABCD
           </text>
-          <text x={40 + dr / 2} y={24 + (ab + bp) / 2} textAnchor="middle" fontSize="9.5" fontWeight="600" fill="var(--plot-label)">
+          <text
+            x={40 + dr / 2}
+            y={dr < 34 ? 16 : 24 + (ab + bp) / 2}
+            textAnchor="middle"
+            fontSize="9.5"
+            fontWeight="600"
+            fill="var(--plot-label)"
+          >
             Road
           </text>
         </svg>
@@ -467,7 +491,14 @@ export const NumberLineViz: React.FC<{ config: NumberLineConfig }> = ({ config }
               <line x1={bx} y1={y} x2={endX} y2={y} stroke={color} strokeWidth={3} />
               <line x1={bx} y1={y} x2={bx} y2={baseAxisY} stroke={color} strokeWidth={1} strokeDasharray="3 3" />
               <circle cx={bx} cy={y} r={5} fill={isClosed ? color : 'var(--plot-dot-bg)'} stroke={color} strokeWidth={2.2} />
-              <text x={(bx + endX) / 2} y={y - 8} textAnchor="middle" fontSize="10.5" fontWeight="700" fill={color}>
+              <text
+                x={Math.min(width - padX - 42, Math.max(padX + 42, (bx + endX) / 2))}
+                y={y - 8}
+                textAnchor="middle"
+                fontSize="10.5"
+                fontWeight="700"
+                fill={color}
+              >
                 {ineq.label}
               </text>
             </g>

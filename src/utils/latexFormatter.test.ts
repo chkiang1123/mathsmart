@@ -1,14 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import katex from 'katex';
-import { EXERCISE_GROUPS, getAllQuestions } from '../data/index';
+import { ALL_EXERCISE_GROUPS, getAllChapterQuestions } from '../data/index';
 import { tokenizeLatexSegments, mathToLatex } from './latexFormatter';
 
-test('mathToLatex converts fractions, square roots, superscripts, and symbols cleanly', () => {
+test('mathToLatex converts fractions, square roots, superscripts, parallel, tan, and symbols cleanly', () => {
   assert.ok(mathToLatex('x² + 4x + 7').includes('x^{2}'));
   assert.ok(mathToLatex('f(x) = 2x / (x - 3)').includes('\\frac{2x}{x - 3}'));
   assert.ok(mathToLatex('y = ±√(x + 7)').includes('\\pm \\sqrt{x + 7}'));
   assert.ok(mathToLatex('Δ = b² - 4ac ≥ 0').includes('\\Delta'));
+  assert.ok(mathToLatex('L₁ ∥ L₂').includes('\\parallel'));
+  assert.ok(mathToLatex('m = tan 45°').includes('\\tan'));
   const segs = tokenizeLatexSegments('If f(x) = 3(x + 1)² - 2, find:');
   assert.ok(
     segs.some((s) => s.type === 'math' && s.value.includes('3(x + 1)^{2} - 2')),
@@ -16,8 +18,9 @@ test('mathToLatex converts fractions, square roots, superscripts, and symbols cl
   );
 });
 
-test('every question text, step, answer, option, and section check compiles cleanly with KaTeX', () => {
-  const all = getAllQuestions();
+test('every question text, step, answer, option, and section check across Ch. 3 & Ch. 4 compiles cleanly with KaTeX', () => {
+  const all = getAllChapterQuestions();
+  assert.equal(all.length, 431);
   const stringsToVerify: { ctx: string; text: string }[] = [];
 
   for (const q of all) {
@@ -36,7 +39,7 @@ test('every question text, step, answer, option, and section check compiles clea
     });
   }
 
-  for (const g of EXERCISE_GROUPS) {
+  for (const g of ALL_EXERCISE_GROUPS) {
     g.sectionCheck?.forEach((sc) => {
       stringsToVerify.push({ ctx: `sc.${sc.id}.stmt`, text: sc.statement });
       stringsToVerify.push({ ctx: `sc.${sc.id}.expl`, text: sc.explanation });

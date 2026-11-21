@@ -156,7 +156,7 @@ export const CompletingSquareViz: React.FC<{
         {analysis && (
           <div className="grid grid-cols-1 md:grid-cols-[1.1fr_1fr] gap-3 items-center">
             <svg
-              viewBox="0 0 260 150"
+              viewBox="0 0 308 150"
               style={{ backgroundColor: 'var(--plot-bg)' }}
               className="w-full h-auto rounded-lg border border-slate-100 dark:border-slate-800"
               role="img"
@@ -198,7 +198,14 @@ export const CompletingSquareViz: React.FC<{
                 }}
                 transition={{ duration: 0.35 }}
               />
-              <text x="119" y="61" textAnchor="middle" fontSize="10.5" fontWeight="600" fill="var(--tile-wing-text)">
+              <text
+                x="119"
+                y="61"
+                textAnchor="middle"
+                fontSize={formatNum(halfCoeff, 2).length > 4 ? '8.5' : '10'}
+                fontWeight="600"
+                fill="var(--tile-wing-text)"
+              >
                 {formatNum(halfCoeff, 2)}x
               </text>
               <text x="119" y="14" textAnchor="middle" fontSize="10" fill="var(--tile-wing-text)">
@@ -237,7 +244,14 @@ export const CompletingSquareViz: React.FC<{
                 }}
                 transition={{ duration: 0.45 }}
               />
-              <text x="119" y="120" textAnchor="middle" fontSize="10" fontWeight="700" fill="var(--tile-corner-text)">
+              <text
+                x="119"
+                y="120"
+                textAnchor="middle"
+                fontSize={formatNum(halfCoeff * halfCoeff, 2).length > 5 ? '8.5' : '9.5'}
+                fontWeight="700"
+                fill="var(--tile-corner-text)"
+              >
                 +{formatNum(halfCoeff * halfCoeff, 2)}
               </text>
               {stage >= 3 && (
@@ -257,19 +271,19 @@ export const CompletingSquareViz: React.FC<{
                 />
               )}
 
-              <text x="154" y="44" fontSize="10.5" fontWeight="600" fill="var(--plot-label)">
+              <text x="152" y="42" fontSize="10.5" fontWeight="600" fill="var(--plot-label)">
                 Complete Square:
               </text>
-              <text x="154" y="64" fontSize="10" fill="var(--plot-point-label)">
+              <text x="152" y="62" fontSize="10" fill="var(--plot-point-label)">
                 Half of {formatNum(coeffs.b / coeffs.a, 2)} = {formatNum(halfCoeff, 2)}
               </text>
-              <text x="154" y="82" fontSize="10" fill="var(--tile-corner-text)" fontWeight="600">
+              <text x="152" y="80" fontSize="10" fill="var(--tile-corner-text)" fontWeight="600">
                 Add ({formatNum(halfCoeff, 2)})² = {formatNum(halfCoeff * halfCoeff, 2)}
               </text>
-              <text x="154" y="106" fontSize="10" fill="var(--plot-tick)">
+              <text x="152" y="104" fontSize="10" fill="var(--plot-tick)">
                 Vertex: ({formatNum(analysis.vertex.x, 2)}, {formatNum(analysis.vertex.y, 2)})
               </text>
-              <text x="154" y="124" fontSize="10" fill="var(--plot-tick)">
+              <text x="152" y="122" fontSize="10" fill="var(--plot-tick)">
                 {analysis.opens === 'upwards' ? 'Minimum' : 'Maximum'} y = {formatNum(analysis.vertex.y, 2)}
               </text>
             </svg>

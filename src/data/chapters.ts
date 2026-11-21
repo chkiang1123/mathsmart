@@ -1,4 +1,9 @@
 import type { ExerciseGroup } from '../types/math';
+import { exercise31 } from './ch3_ex_3_1';
+import { exercise32 } from './ch3_ex_3_2';
+import { exercise33 } from './ch3_ex_3_3';
+import { ch3CheckYourselfGroup, revisionExercise3Group } from './ch3_revision';
+import { ch3McqGroup, ch3ExamZoneGroup } from './ch3_exam';
 import { exercise41 } from './ex_4_1';
 import { exercise42 } from './ex_4_2';
 import { exercise43 } from './ex_4_3';
@@ -14,6 +19,16 @@ export interface ChapterSpec {
   status: 'active' | 'reserved';
   exercises: ExerciseGroup[];
 }
+
+export const CH3_EXERCISES: ExerciseGroup[] = [
+  exercise31,
+  exercise32,
+  exercise33,
+  ch3CheckYourselfGroup,
+  revisionExercise3Group,
+  ch3McqGroup,
+  ch3ExamZoneGroup,
+];
 
 export const CH4_EXERCISES: ExerciseGroup[] = [
   exercise41,
@@ -38,7 +53,7 @@ export const CHAPTERS: ChapterSpec[] = [
   {
     id: 'ch2',
     number: 'Ch. 2',
-    title: 'Equations of Straight Lines',
+    title: 'Quadratic Equations in One Unknown',
     subtitle: 'Reserved for upcoming chapter upload',
     status: 'reserved',
     exercises: [],
@@ -46,10 +61,10 @@ export const CHAPTERS: ChapterSpec[] = [
   {
     id: 'ch3',
     number: 'Ch. 3',
-    title: 'Quadratic Equations in One Unknown',
-    subtitle: 'Reserved for upcoming chapter upload',
-    status: 'reserved',
-    exercises: [],
+    title: 'Equations of Straight Lines',
+    subtitle: 'Ex 3.1 – 3.3, Check Yourself, Revision 3, MCQs & Exam Zone',
+    status: 'active',
+    exercises: CH3_EXERCISES,
   },
   {
     id: 'ch4',

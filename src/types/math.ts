@@ -1,4 +1,11 @@
 export type ExerciseId =
+  | 'ex3_1'
+  | 'ex3_2'
+  | 'ex3_3'
+  | 'ch3_check_yourself'
+  | 'ch3_revision'
+  | 'ch3_mcq'
+  | 'ch3_exam_zone'
   | 'warmup'
   | 'ex4_1'
   | 'ex4_2'

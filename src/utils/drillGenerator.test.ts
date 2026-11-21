@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import katex from 'katex';
-import { getAllQuestions } from '../data';
+import { getAllChapterQuestions } from '../data';
 import { tokenizeLatexSegments } from './latexFormatter';
 import { formatQuestionStatement } from './statementFormatter';
 import {
@@ -24,9 +24,9 @@ function assertLatexValid(raw: string, context: string) {
   }
 }
 
-test('all 248 textbook questions classify and generate valid KaTeX drill variations across seeds', () => {
-  const all = getAllQuestions();
-  assert.equal(all.length, 248);
+test('all 431 textbook questions (Ch. 3 & Ch. 4) classify and generate valid KaTeX drill variations across seeds', () => {
+  const all = getAllChapterQuestions();
+  assert.equal(all.length, 431);
 
   const seenArchetypes = new Set<DrillArchetype>();
 
@@ -34,6 +34,13 @@ test('all 248 textbook questions classify and generate valid KaTeX drill variati
     const q = all[i];
     const arch = classifyQuestionArchetype(q);
     seenArchetypes.add(arch);
+
+    if (q.exerciseId.startsWith('ex3_') || q.exerciseId.startsWith('ch3_')) {
+      assert.ok(
+        arch.startsWith('ch3-'),
+        `Chapter 3 question ${q.id} must classify into a ch3-* archetype, got ${arch}`
+      );
+    }
 
     const drill = generateDrillQuestion(q, 1001 + i * 97, 1);
     assert.ok(drill.question.parts.length > 0, `Drill parts missing for ${q.id}`);
@@ -63,11 +70,11 @@ test('all 248 textbook questions classify and generate valid KaTeX drill variati
     }
   }
 
-  assert.equal(seenArchetypes.size, 11, 'All 11 drill archetypes should be represented');
+  assert.equal(seenArchetypes.size, 17, 'All 17 drill archetypes (11 Ch. 4 + 6 Ch. 3) should be represented');
 });
 
-test('multiple random seeds produce distinct variations for key archetypes including rev-42', () => {
-  const all = getAllQuestions();
+test('multiple random seeds produce distinct variations for key archetypes including rev-42 and ex33-9', () => {
+  const all = getAllChapterQuestions();
   const rev42 = all.find((q) => q.id === 'rev-42');
   assert.ok(rev42);
   assert.equal(classifyQuestionArchetype(rev42), 'unknown-coeff-two-points');
@@ -79,6 +86,13 @@ test('multiple random seeds produce distinct variations for key archetypes inclu
   if (d1.question.visual.kind === 'coordinate') {
     assert.equal(d1.question.visual.curves.length, 2);
   }
+
+  const ex33q9 = all.find((q) => q.id === 'ex33-9');
+  assert.ok(ex33q9);
+  assert.equal(classifyQuestionArchetype(ex33q9), 'ch3-intersections');
+  const cd1 = generateDrillQuestion(ex33q9, 3101, 1);
+  const cd2 = generateDrillQuestion(ex33q9, 7219, 2);
+  assert.notEqual(cd1.question.statement, cd2.question.statement);
 });
 
 test('checkDrillAnswer handles exact numbers, inequalities, tuples, and Yes/No', () => {
@@ -93,7 +107,7 @@ test('checkDrillAnswer handles exact numbers, inequalities, tuples, and Yes/No',
 });
 
 test('findRelatedTextbookQuestions finds relevant cross-section questions excluding source', () => {
-  const all = getAllQuestions();
+  const all = getAllChapterQuestions();
   const rev42 = all.find((q) => q.id === 'rev-42')!;
   const related = findRelatedTextbookQuestions(rev42, all, 4);
   assert.ok(related.length >= 2 && related.length <= 4);
